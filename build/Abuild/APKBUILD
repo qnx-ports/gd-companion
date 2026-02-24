@@ -1,0 +1,62 @@
+# Alpine-Contributor: Carlo Landmeter <clandmeter@alpinelinux.org>
+# Alpine-Contributor: Nicolas Lorin <androw95220@gmail.com>
+# Alpine-Maintainer: Carlo Landmeter <clandmeter@alpinelinux.org>
+# Maintainer: Aaron Bassett <abassett@qnx.com>
+pkgname=gd
+pkgver=2.3.3
+pkgrel=1
+_pkgreal=lib$pkgname
+pkgdesc="Library for the dynamic creation of images by programmers"
+url="https://libgd.github.io/"
+arch="all"
+license="GD"
+depends_libs="libavif fontconfig freetype libjpeg-turbo libpng tiff libwebp zlib-ng"
+makedepends="$depends_dev"
+checkdepends="font-liberation"
+subpackages="$pkgname-dev $pkgname-doc $_pkgreal:libs"
+source="https://github.com/$_pkgreal/$_pkgreal/releases/download/gd-$pkgver/$_pkgreal-$pkgver.tar.xz"
+builddir="$srcdir/$_pkgreal-$pkgver"
+
+case "$CARCH" in
+	# https://github.com/libgd/libgd/issues/359
+	ppc64*|riscv64|s390x|loongarch64) options="!check";;
+esac
+
+prepare() {
+	default_prepare
+	update_config_sub
+}
+
+build() {
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info \
+		--enable-gd-formats
+	make
+}
+
+check() {
+	TMPDIR=/tmp make check
+}
+
+package() {
+	depends="$_pkgreal=$pkgver-r$pkgrel"
+	DESTDIR="$pkgdir" make install
+	install -Dm644 COPYING "$pkgdir/usr/share/licenses/$pkgname/COPYING"
+}
+
+dev() {
+	default_dev
+	depends="$pkgname perl fontconfig-dev freetype-dev libavif-dev libjpeg-turbo-dev libpng-dev libwebp-dev tiff-dev zlib-ng-dev pkgconfig"
+	mkdir -p "$subpkgdir"/usr/bin
+	mv "$pkgdir"/usr/bin/bdftogd "$subpkgdir"/usr/bin/
+}
+
+
+sha512sums="
+aa49d4381d604a4360d556419d603df2ffd689a6dcc10f8e5e1d158ddaa3ab89912f6077ca77da4e370055074007971cf6d356ec9bf26dcf39bcff3208bc7e6c  libgd-2.3.3.tar.xz
+"
